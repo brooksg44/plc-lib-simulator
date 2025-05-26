@@ -1,8 +1,8 @@
 (ns plc-lib.core
   (:require [quil.core :as q]
             [quil.middleware :as m]
-            [clojure.string :as str]))
-
+            [clojure.string :as str])
+  (:gen-class))
 ;; Simulated hardware state
 (defonce plc-state
   (atom {:pins {}
@@ -26,6 +26,9 @@
 
 (defn millis []
   (System/currentTimeMillis))
+
+(defn toggle-input [pin]
+  (swap! plc-state update-in [:inputs pin] not))
 
 ;; Core PLC functions
 (defn in [input]
@@ -165,13 +168,13 @@
   (q/background 240)
 
   ;; Rung 1: X0 AND X1 -> Y0
-  (draw-contact :x0 100 100)
-  (draw-connection 50 100 100 100 (digital-read :x0))
-  (draw-contact :x1 200 100)
-  (draw-connection 150 100 200 100 (and (digital-read :x0) (digital-read :x1)))
-  (draw-coil :y0 300 100)
-  (draw-connection 250 100 300 100 (get-in @plc-state [:outputs :y0]))
-  (draw-connection 350 100 400 100 (get-in @plc-state [:outputs :y0]))
+  (draw-contact :x0 100 120)
+  (draw-connection 50 120 75 120 (digital-read :x0))
+  (draw-contact :x1 200 120)
+  (draw-connection 125 120 175 120 (and (digital-read :x0) (digital-read :x1)))
+  (draw-coil :y0 300 120)
+  (draw-connection 225 120 275 120 (get-in @plc-state [:outputs :y0]))
+  (draw-connection 325 120 400 120 (get-in @plc-state [:outputs :y0]))
 
   ;; Rung 2: X2 -> T0 -> Y1
   (draw-contact :x2 100 160)
@@ -205,8 +208,8 @@
 
   ;; Power rails
   (q/stroke 0)
-  (q/line 50 100 50 280)
-  (q/line 400 100 400 280)
+  (q/line 50 120 50 280)
+  (q/line 400 120 400 280)
 
   ;; Instructions
   (q/fill 0)
@@ -220,25 +223,35 @@
 (defn mouse-clicked [state event]
   (let [x (:x event)
         y (:y event)]
-    (doseq [[pin px py] [[:x0 100 100] [:x1 200 100] [:x2 100 160]
+    (doseq [[pin px py] [[:x0 100 120] [:x1 200 120] [:x2 100 160]
                          [:x3 100 220] [:x4 200 220] [:x5 100 280]]]
       (when (and (<= (- px 25) x (+ px 25))
                  (<= (- py 15) y (+ py 15)))
-        (swap! plc-state update-in [:inputs pin] not))))
+        (toggle-input pin))))
   @plc-state)
 
-(defn -main []
-  (q/sketch
-   :title "Enhanced PLC Simulator with Quil"
-   :size [450 350]
-   :setup setup
-   :update update-state
-   :draw draw-state
-   :mouse-clicked mouse-clicked
-   :features [:keep-on-top]
-   :middleware [m/fun-mode]))
+(defn -main
+  "The main entry point for the application.
+Starts the PLC Simulator Quil sketch."
+  [& args]
+  (println "Starting PLC Simulator...")
+  (println "The Quil sketch window should appear automatically"))
 
-;; Run simulation
-(-main)
+(q/defsketch example
+  :title "Enhanced PLC Simulator with Quil"
+  :size [550 450]
+  :setup setup
+  :update update-state
+  :draw draw-state
+  :mouse-clicked mouse-clicked
+  :features [:keep-on-top]
+  :middleware [m/fun-mode])
 
+;; Start the sketch when the application is run - no need to call it
+;; as Quil automatically starts the sketch when defined
+(defn start-simulator []
+  (println "Simulator initialized"))
+
+;; No need to modify the -main function, as the sketch auto-starts
 ;; clojure -M -m plc-lib.core
+
