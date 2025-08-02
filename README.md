@@ -1,0 +1,1 @@
+clojure -M -m plc-lib.core
